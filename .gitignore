@@ -24,3 +24,6 @@ __debug_bin*
 
 # Environment file
 .env
+
+# binary
+volleymate
