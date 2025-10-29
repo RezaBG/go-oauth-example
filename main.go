@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -34,6 +36,25 @@ func main() {
 			"https://www.googleapis.com/auth/userinfo.email",
 		},
 	}
-	log.Println("OAuth Config setup complete.")
+	http.HandleFunc("/", handleMain)
+	http.HandleFunc("/login", handleGoogleLogin)
+
+	log.Println("Starting server on http://localhost:8080")
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatalf("Could not start server: %s\n", err)
+	}
+
+}
+
+func handleMain(w http.ResponseWriter, r *http.Request) {
+	var html = `<html><body><a href="/login">Log in with Google</a></body></html>`
+	fmt.Fprintf(w, html)
+}
+
+func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
+	url := googleOauthConfig.AuthCodeURL("random-state-string")
+
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 
 }
