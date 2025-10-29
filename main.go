@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -38,6 +40,7 @@ func main() {
 	}
 	http.HandleFunc("/", handleMain)
 	http.HandleFunc("/login", handleGoogleLogin)
+	http.HandleFunc("/callback", handlerGoogleCallback)
 
 	log.Println("Starting server on http://localhost:8080")
 	err = http.ListenAndServe(":8080", nil)
@@ -57,4 +60,29 @@ func handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 
+}
+
+func handlerGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+
+	token, err := googleOauthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		log.Fatalf("Could not get token: %s", err)
+	}
+
+	client := googleOauthConfig.Client(context.Background(), token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		log.Fatalf("Could not get user info: %s", err)
+	}
+	defer resp.Body.Close()
+
+	var userInfo map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+		log.Fatalf("Could not decode user info: %s", err)
+	}
+
+	fmt.Fprintf(w, "Welcome, %s!<br>", userInfo["name"])
+	fmt.Fprintf(w, "Email, %s!<br>", userInfo["email"])
+	fmt.Fprintf(w, "Token (don't share this!): %s", token.AccessToken)
 }
