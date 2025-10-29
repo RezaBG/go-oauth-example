@@ -25,5 +25,8 @@ __debug_bin*
 # Environment file
 .env
 
+# vendor
+vendor
+
 # binary
 volleymate
